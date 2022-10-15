@@ -1,6 +1,9 @@
 import React from 'react';
 import './App.css';
 
+import CardList from './components/card-list/card-list.component';
+import SearchBox from './components/search-box/search-box.component';
+
 class App extends React.Component {
 
   constructor() {
@@ -11,12 +14,10 @@ class App extends React.Component {
       searchField: ''
     }
 
-    console.log('constructor');
   }
 
   //Lifecycle method
   componentDidMount() {
-    console.log('componentDidMount');
     fetch('https://jsonplaceholder.typicode.com/users')
       .then((response) => response.json())
       .then((users) => {
@@ -39,24 +40,19 @@ class App extends React.Component {
   }
 
   render() {
-    console.log('render');
 
-    const filterMonsters = this.state.monsters.filter((monster) => {
-      return monster.name.toLocaleLowerCase().includes(this.state.searchField);
+    const { monsters, searchField } = this.state;
+    const { onSearchInput } = this;
+
+    const filterMonsters = monsters.filter((monster) => {
+      return monster.name.toLocaleLowerCase().includes(searchField);
     });
 
     return (
       <div className="App">
-
-        <input type='search' className='search-box' placeholder='Search Monsters' onChange={this.onSearchInput} />
-
-        {filterMonsters.map((monster) => {
-          return (
-            <div key={monster.id}>
-              <h1>{monster.name}</h1>
-            </div>
-          );
-        })}
+        <h1 className='app-title'>Monsters Rolodex</h1>
+        <SearchBox onChangeHandler={onSearchInput} placeholder='Search Monsters' className='monsters-search-box' />
+        <CardList monsters={filterMonsters} anything={['a', 'b', 'c']} />
       </div>
     );
   }
