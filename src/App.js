@@ -3,12 +3,17 @@ import './App.css';
 
 import Counter from './counter';
 
+const callBack = (data) => {
+  console.log('child says: ', data);
+}
+
 function App() {
+
   return (
     <div className="App">
       <header className="App-header">
         <img src={logo} className="App-logo" alt="logo" />
-        <Counter />
+        <Counter getFromChild={callBack} />
       </header>
     </div>
   );
