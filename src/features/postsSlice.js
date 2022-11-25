@@ -1,4 +1,4 @@
-import { createSlice } from "@reduxjs/toolkit";
+import { createSlice, nanoid } from "@reduxjs/toolkit";
 
 const initialState = {
     loading: false,
@@ -14,11 +14,22 @@ const postSlice = createSlice({
     name: 'posts',
     initialState: initialState,
     reducers: {
-        postAdded(state, action) {
-            //We usually dont mutate state directly like here state.push is wrong way although
-            //Here its a feature of react toolkit that you can diectly push the data in the state because under the hood it uses immer.js for state manipulation
-            //console.log(state);
-            state.postData.push(action.payload);
+        postAdded: {
+            reducer(state, action) {
+                //We usually dont mutate state directly like here state.push is wrong way although
+                //Here its a feature of react toolkit that you can diectly push the data in the state because under the hood it uses immer.js for state manipulation
+                //console.log(state);
+                state.postData.push(action.payload)
+            },
+            prepare(title, content) {
+                return {
+                    payload: {
+                        id: nanoid(),
+                        title,
+                        content
+                    }
+                }
+            }
         }
     }
 });
