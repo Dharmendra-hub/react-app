@@ -1,5 +1,5 @@
 
-import postsReducer from '../features/postsSlice';
+import postsReducer from '../features/posts/postsSlice';
 
 const rootReducer = {
     posts: postsReducer
