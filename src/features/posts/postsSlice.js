@@ -1,15 +1,24 @@
-import { createSlice, createAsyncThunk, createSelector } from "@reduxjs/toolkit";
+import {
+    createSlice,
+    createAsyncThunk,
+    createSelector,
+    createEntityAdapter
+} from "@reduxjs/toolkit";
 import { sub } from 'date-fns';
 import axios from 'axios';
 
 const POSTS_URL = 'https://jsonplaceholder.typicode.com/posts';
 
-const initialState = {
+const postsAdapter = createEntityAdapter({
+    sortComparer: (a, b) => b.date.localeCompare(a.date)
+});
+
+const initialState = postsAdapter.getInitialState({
     posts: [],
     status: 'idle', //'idle' | 'loading' | 'succeeded' | 'failed'
     error: null,
     count: 0
-};
+});
 
 /**
  * @params
@@ -63,7 +72,7 @@ const postSlice = createSlice({
     reducers: {
         reactionAdded(state, action) {
             const { postId, reaction } = action.payload;
-            const existingPost = state.posts.find(post => post.id === postId);
+            const existingPost = state.entities[postId];
             if (existingPost) {
                 //immer js will handle this direct update of the state
                 existingPost.reactions[reaction]++
@@ -95,7 +104,7 @@ const postSlice = createSlice({
                 });
 
                 //Add any fetched post to the array
-                state.posts = state.posts.concat(loadedPosts);
+                postsAdapter.upsertMany(state, loadedPosts)
             })
             .addCase(fetchPosts.rejected, (state, action) => {
                 state.status = 'failed'
@@ -112,7 +121,7 @@ const postSlice = createSlice({
                     coffee: 0
                 }
                 console.log(action.payload)
-                state.posts.push(action.payload);
+                postsAdapter.addOne(state, action.payload);
             })
             .addCase(updatePost.fulfilled, (state, action) => {
                 if (!action.payload?.id) {
@@ -120,10 +129,8 @@ const postSlice = createSlice({
                     console.log(action.payload)
                     return;
                 }
-                const { id } = action.payload;
                 action.payload.date = new Date().toISOString();
-                const posts = state.posts.filter(post => post.id !== id);
-                state.posts = [...posts, action.payload];
+                postsAdapter.upsertOne(state, action.payload);
             })
             .addCase(deletePost.fulfilled, (state, action) => {
                 if (!action.payload?.id) {
@@ -132,20 +139,24 @@ const postSlice = createSlice({
                     return;
                 }
                 const { id } = action.payload;
-                const posts = state.posts.filter(post => post.id !== id);
-                state.posts = posts;
+                postsAdapter.removeOne(state, id);
             })
     }
 });
 
 //name in createSlice
-export const selectAllPosts = (state) => state.posts.posts;
+//getSelectors creates these selectors and we rename them with aliases using destructuring
+export const {
+    selectAll: selectAllPosts,
+    selectById: selectPostById,
+    selectIds: selectPostIds
+    // Pass in a selector that returns the posts slice of state
+} = postsAdapter.getSelectors(state => state.posts);
+
 export const getPostsStatus = (state) => state.posts.status;
 export const getPostsError = (state) => state.posts.error;
 export const getCount = (state) => state.posts.count;
 
-export const selectPostById = (state, postId) =>
-    state.posts.posts.find(post => post.id === postId);
 
 //Meoization by using createSelector
 export const selectPostsByUser = createSelector(
