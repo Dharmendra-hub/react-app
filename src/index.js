@@ -8,6 +8,7 @@ import { Provider } from 'react-redux';
 import store from './redux/store';
 //we want to ivoke immediately
 import { fetchUsers } from './features/users/usersSlice';
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
 
 store.dispatch(fetchUsers());
 
@@ -15,7 +16,13 @@ const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.Fragment>
     <Provider store={store}>
-      <App />
+      <BrowserRouter>
+        <Routes>
+          {/* the "/*" allows for nested Routes */}
+          <Route path='/*' element={<App />} />
+        </Routes>
+      </BrowserRouter>
+
     </Provider>
   </React.Fragment>
 );
