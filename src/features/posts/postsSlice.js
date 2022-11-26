@@ -1,47 +1,38 @@
-import { createSlice, nanoid } from "@reduxjs/toolkit";
+import { createSlice, nanoid, createAsyncThunk } from "@reduxjs/toolkit";
 import { sub } from 'date-fns';
+import axios from 'axios';
 
-const initialState = [
-    {
-        id: 1,
-        title: 'Learning Redux toolkit',
-        content: 'I am learning redux toolkit',
-        date: sub(new Date(), { minutes: 10 }).toISOString(),
-        reactions: {
-            thumbsUp: 0,
-            wow: 0,
-            heart: 0,
-            rocket: 0,
-            coffee: 0
-        }
-    },
-    {
-        id: 2,
-        title: 'Redux Toolkit advanced',
-        content: 'Redux setup and slices',
-        date: sub(new Date(), { minutes: 5 }).toISOString(),
-        reactions: {
-            thumbsUp: 0,
-            wow: 0,
-            heart: 0,
-            rocket: 0,
-            coffee: 0
-        }
-    },
-    {
-        id: 3,
-        title: 'React query',
-        content: 'React query for data processing',
-        date: sub(new Date(), { minutes: 3 }).toISOString(),
-        reactions: {
-            thumbsUp: 0,
-            wow: 0,
-            heart: 0,
-            rocket: 0,
-            coffee: 0
-        }
+const POSTS_URL = 'https://jsonplaceholder.typicode.com/posts';
+
+const initialState = {
+    posts: [],
+    status: 'idle', //'idle' | 'loading' | 'succeeded' | 'failed'
+    error: null
+};
+
+/**
+ * @params
+ * - First is the string that is used as the prefix for the generated action type
+ * - Second is a payload creator callback, and this function should return a promise that contain some data or rejected promise with an error
+ */
+export const fetchPosts = createAsyncThunk('posts/fetchPostss', async () => {
+    try {
+        const response = await axios.get(POSTS_URL);
+        return response.data;
     }
-];
+    catch (err) {
+        return err.message;
+    }
+});
+
+export const addNewPost = createAsyncThunk('posts/addNewPost', async (initialPost) => {
+    try {
+        const response = await axios.post(POSTS_URL, initialPost);
+        return response.data;
+    } catch (error) {
+        return error.message;
+    }
+})
 
 const postSlice = createSlice({
     name: 'posts',
@@ -52,7 +43,7 @@ const postSlice = createSlice({
                 //We usually dont mutate state directly like here state.push is wrong way although
                 //Here its a feature of react toolkit that you can diectly push the data in the state because under the hood it uses immer.js for state manipulation
                 //console.log(state);
-                state.push(action.payload)
+                state.posts.push(action.payload)
             },
             prepare(title, content, userId) {
                 return {
@@ -75,17 +66,61 @@ const postSlice = createSlice({
         },
         reactionAdded(state, action) {
             const { postId, reaction } = action.payload;
-            const existingPost = state.find(post => post.id === postId);
+            const existingPost = state.posts.find(post => post.id === postId);
             if (existingPost) {
                 //immer js will handle this direct update of the state
                 existingPost.reactions[reaction]++
             }
         }
+    },
+    extraReducers(builder) {
+        builder
+            .addCase(fetchPosts.pending, (state, action) => {
+                state.status = 'loading';
+            })
+            .addCase(fetchPosts.fulfilled, (state, action) => {
+                state.status = 'succeeded';
+                //adding date and reactions
+                let min = 1;
+                const loadedPosts = action.payload.map(post => {
+                    post.date = sub(new Date(), { minutes: min++ }).toISOString()
+                    post.reactions = {
+                        thumbsUp: 0,
+                        wow: 0,
+                        heart: 0,
+                        rocket: 0,
+                        coffee: 0
+                    }
+                    return post;
+                });
+
+                //Add any fetched post to the array
+                state.posts = state.posts.concat(loadedPosts);
+            })
+            .addCase(fetchPosts.rejected, (state, action) => {
+                state.status = 'failed'
+                state.error = action.error.message
+            })
+            .addCase(addNewPost.fulfilled, (state, action) => {
+                action.payload.userId = Number(action.payload.userId);
+                action.payload.date = new Date().toISOString();
+                action.payload.reactions = {
+                    thumbsUp: 0,
+                    wow: 0,
+                    heart: 0,
+                    rocket: 0,
+                    coffee: 0
+                }
+                console.log(action.payload)
+                state.posts.push(action.payload);
+            })
     }
 });
 
 //name in createSlice
-export const selectAllPosts = (state) => state.posts;
+export const selectAllPosts = (state) => state.posts.posts;
+export const getPostsStatus = (state) => state.posts.status;
+export const getPostsError = (state) => state.posts.error;
 
 export const { postAdded, reactionAdded } = postSlice.actions;
 
