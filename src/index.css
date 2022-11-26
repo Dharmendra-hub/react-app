@@ -130,3 +130,11 @@ textarea {
   background-color: palevioletred;
   color: white;
 }
+
+.header-logo{
+  text-decoration: none;
+  color: #fff;
+}
+.header-link{
+  text-decoration: none;
+}

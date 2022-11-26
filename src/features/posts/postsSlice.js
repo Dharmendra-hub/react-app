@@ -1,4 +1,4 @@
-import { createSlice, nanoid, createAsyncThunk } from "@reduxjs/toolkit";
+import { createSlice, createAsyncThunk, createSelector } from "@reduxjs/toolkit";
 import { sub } from 'date-fns';
 import axios from 'axios';
 
@@ -7,7 +7,8 @@ const POSTS_URL = 'https://jsonplaceholder.typicode.com/posts';
 const initialState = {
     posts: [],
     status: 'idle', //'idle' | 'loading' | 'succeeded' | 'failed'
-    error: null
+    error: null,
+    count: 0
 };
 
 /**
@@ -60,32 +61,6 @@ const postSlice = createSlice({
     name: 'posts',
     initialState: initialState,
     reducers: {
-        postAdded: {
-            reducer(state, action) {
-                //We usually dont mutate state directly like here state.push is wrong way although
-                //Here its a feature of react toolkit that you can diectly push the data in the state because under the hood it uses immer.js for state manipulation
-                //console.log(state);
-                state.posts.push(action.payload)
-            },
-            prepare(title, content, userId) {
-                return {
-                    payload: {
-                        id: nanoid(),
-                        title,
-                        content,
-                        date: new Date().toISOString(),
-                        userId,
-                        reactions: {
-                            thumbsUp: 0,
-                            wow: 0,
-                            heart: 0,
-                            rocket: 0,
-                            coffee: 0
-                        }
-                    }
-                }
-            }
-        },
         reactionAdded(state, action) {
             const { postId, reaction } = action.payload;
             const existingPost = state.posts.find(post => post.id === postId);
@@ -93,6 +68,9 @@ const postSlice = createSlice({
                 //immer js will handle this direct update of the state
                 existingPost.reactions[reaction]++
             }
+        },
+        increaseCount(state, action) {
+            state.count = state.count + 1;
         }
     },
     extraReducers(builder) {
@@ -164,10 +142,18 @@ const postSlice = createSlice({
 export const selectAllPosts = (state) => state.posts.posts;
 export const getPostsStatus = (state) => state.posts.status;
 export const getPostsError = (state) => state.posts.error;
+export const getCount = (state) => state.posts.count;
 
 export const selectPostById = (state, postId) =>
     state.posts.posts.find(post => post.id === postId);
 
-export const { postAdded, reactionAdded } = postSlice.actions;
+//Meoization by using createSelector
+export const selectPostsByUser = createSelector(
+    [selectAllPosts, (state, userId) => userId],
+    (posts, userId) => posts.filter(post => post.userId === userId)
+);
+
+
+export const { increaseCount, reactionAdded } = postSlice.actions;
 
 export default postSlice.reducer;

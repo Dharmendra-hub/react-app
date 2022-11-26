@@ -8,8 +8,11 @@ import { Provider } from 'react-redux';
 import store from './redux/store';
 //we want to ivoke immediately
 import { fetchUsers } from './features/users/usersSlice';
+import { fetchPosts } from './features/posts/postsSlice';
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 
+//This is immediately getting the posts and users from the API
+store.dispatch(fetchPosts());
 store.dispatch(fetchUsers());
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
