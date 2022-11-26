@@ -20,6 +20,8 @@ let PostsExcerpt = ({ post }) => {
 }
 
 //This allows to not to render if the props is not changed
+//This is not a Normalization ay although
+//This meoization is high order component used in performance optimization
 PostsExcerpt = React.memo(PostsExcerpt);
 
 export default PostsExcerpt;
